@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     const envUser = process.env.ADMIN_USER;
     const envPass = process.env.ADMIN_PASS;
 
-    if (username === envUser && password === envPass) {
+    if (username?.trim() === envUser && password?.trim() === envPass) {
       const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback_secret');
       
       const token = await new SignJWT({ user: username, role: 'admin' })
