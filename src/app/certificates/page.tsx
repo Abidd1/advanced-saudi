@@ -1,25 +1,28 @@
 'use client';
 
 import Image from "next/image";
-import { useState } from "react";
-import { Loader2, Printer, Download, CheckCircle, ShieldCheck } from "lucide-react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { Loader2, Printer, CheckCircle, ShieldCheck } from "lucide-react";
 
-export default function Certificates() {
-  const [searchedId, setSearchedId] = useState('');
+function CertificateSearchContent() {
+  const searchParams = useSearchParams();
+  const initialId = searchParams.get('id') || '';
+  
+  const [searchedId, setSearchedId] = useState(initialId);
   const [isSearching, setIsSearching] = useState(false);
   const [result, setResult] = useState<{ id: string, frontUrl: string, backUrl: string, date: string } | null>(null);
   const [error, setError] = useState('');
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchedId) return;
+  const performSearch = useCallback(async (id: string) => {
+    if (!id) return;
 
     setIsSearching(true);
     setError('');
     setResult(null);
 
     try {
-      const res = await fetch(`/api/certificates?id=${searchedId}`);
+      const res = await fetch(`/api/certificates?id=${id}`);
       const payload = await res.json();
       
       if (res.ok && payload.success) {
@@ -37,7 +40,19 @@ export default function Certificates() {
     } finally {
       setIsSearching(false);
     }
+  }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    performSearch(searchedId);
   };
+
+  useEffect(() => {
+    if (initialId) {
+      setSearchedId(initialId);
+      performSearch(initialId);
+    }
+  }, [initialId, performSearch]);
 
   const handlePrint = () => {
     window.print();
@@ -159,5 +174,17 @@ export default function Certificates() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function Certificates() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Loader2 className="animate-spin text-[#00A3E0]" size={48} />
+      </div>
+    }>
+      <CertificateSearchContent />
+    </Suspense>
   );
 }
