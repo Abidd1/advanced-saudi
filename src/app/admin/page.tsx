@@ -11,7 +11,6 @@ export default function AdminDashboard() {
   // Upload State
   const [idToUpload, setIdToUpload] = useState('');
   const [frontImage, setFrontImage] = useState<string>('');
-  const [backImage, setBackImage] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{type: 'success'|'error', msg: string} | null>(null);
 
@@ -90,18 +89,17 @@ export default function AdminDashboard() {
     });
   };
 
-  const handleFileDrop = async (e: React.ChangeEvent<HTMLInputElement>, side: 'front' | 'back') => {
+  const handleFileDrop = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const base64 = await fileToBase64(e.target.files[0]);
-      if (side === 'front') setFrontImage(base64);
-      else setBackImage(base64);
+      setFrontImage(base64);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!idToUpload || !frontImage || !backImage) {
-      setUploadStatus({ type: 'error', msg: 'Please provide ID and both images.' });
+    if (!idToUpload || !frontImage) {
+      setUploadStatus({ type: 'error', msg: 'Please provide ID and the certificate image.' });
       return;
     }
 
@@ -114,8 +112,7 @@ export default function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           id: idToUpload, 
-          frontImgBase64: frontImage, 
-          backImgBase64: backImage 
+          frontImgBase64: frontImage
         })
       });
 
@@ -123,7 +120,6 @@ export default function AdminDashboard() {
       if (res.ok) {
         setUploadStatus({ type: 'success', msg: `Certificate ${idToUpload} successfully published in database!` });
         setFrontImage('');
-        setBackImage('');
         setIdToUpload('');
       } else {
         setUploadStatus({ type: 'error', msg: data.error || 'Upload failed' });
@@ -270,38 +266,21 @@ export default function AdminDashboard() {
                    />
                  </div>
 
-                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                 <div className="grid grid-cols-1 gap-8">
                    <div className="space-y-4">
-                     <label className="block text-sm font-black text-gray-700 uppercase tracking-widest">Certificate Front</label>
-                     <div className="relative border-2 border-dashed border-gray-200 rounded-2xl p-8 bg-gray-50 flex flex-col items-center justify-center hover:bg-blue-50/30 hover:border-[#00A3E0] transition-all h-60 cursor-pointer group">
-                        <input type="file" accept="image/*" onChange={(e) => handleFileDrop(e, 'front')} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                     <label className="block text-sm font-black text-gray-700 uppercase tracking-widest">Certificate Image (Single File)</label>
+                     <div className="relative border-2 border-dashed border-gray-200 rounded-2xl p-8 bg-gray-50 flex flex-col items-center justify-center hover:bg-blue-50/30 hover:border-[#00A3E0] transition-all h-80 cursor-pointer group">
+                        <input type="file" accept="image/*" onChange={(e) => handleFileDrop(e)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                         {frontImage ? (
                           <div className="flex flex-col items-center text-green-600">
                             <CheckCircle2 className="mb-3" size={48} />
-                            <span className="text-lg font-black">Front Ready</span>
+                            <span className="text-lg font-black">Image Ready</span>
                           </div>
                         ) : (
                           <div className="flex flex-col items-center text-gray-400 group-hover:text-[#00A3E0] transition-colors">
-                             <UploadCloud size={48} className="mb-3" />
-                             <span className="text-sm font-bold">Upload Front Side</span>
-                          </div>
-                        )}
-                     </div>
-                   </div>
-
-                   <div className="space-y-4">
-                     <label className="block text-sm font-black text-gray-700 uppercase tracking-widest">Certificate Back</label>
-                     <div className="relative border-2 border-dashed border-gray-200 rounded-2xl p-8 bg-gray-50 flex flex-col items-center justify-center hover:bg-blue-50/30 hover:border-[#00A3E0] transition-all h-60 cursor-pointer group">
-                        <input type="file" accept="image/*" onChange={(e) => handleFileDrop(e, 'back')} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                        {backImage ? (
-                          <div className="flex flex-col items-center text-green-600">
-                            <CheckCircle2 className="mb-3" size={48} />
-                            <span className="text-lg font-black">Back Ready</span>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center text-gray-400 group-hover:text-[#00A3E0] transition-colors">
-                             <UploadCloud size={48} className="mb-3" />
-                             <span className="text-sm font-bold">Upload Back Side</span>
+                             <UploadCloud size={64} className="mb-3" />
+                             <span className="text-sm font-bold">Upload Digital Copy</span>
+                             <p className="text-[10px] mt-2 opacity-50 font-bold uppercase tracking-widest text-center">Contains both front & back in single document</p>
                           </div>
                         )}
                      </div>

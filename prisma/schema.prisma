@@ -10,6 +10,6 @@ datasource db {
 model Certificate {
   id          String   @id
   frontImgUrl String
-  backImgUrl  String
+  backImgUrl  String?
   createdAt   DateTime @default(now())
 }

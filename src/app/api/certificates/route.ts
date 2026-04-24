@@ -13,19 +13,24 @@ export async function POST(request: Request) {
   try {
     const { id, frontImgBase64, backImgBase64 } = await request.json();
 
-    if (!id || !frontImgBase64 || !backImgBase64) {
+    if (!id || !frontImgBase64) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Server-side upload to cloudinary
     const frontUpload = await cloudinary.uploader.upload(frontImgBase64, { folder: 'certificates' });
-    const backUpload = await cloudinary.uploader.upload(backImgBase64, { folder: 'certificates' });
+    
+    let backImgUrl = null;
+    if (backImgBase64) {
+      const backUpload = await cloudinary.uploader.upload(backImgBase64, { folder: 'certificates' });
+      backImgUrl = backUpload.secure_url;
+    }
 
     const certificate = await prisma.certificate.create({
       data: {
         id,
         frontImgUrl: frontUpload.secure_url,
-        backImgUrl: backUpload.secure_url,
+        backImgUrl: backImgUrl,
       }
     });
 

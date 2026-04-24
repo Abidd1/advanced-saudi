@@ -11,7 +11,7 @@ function CertificateSearchContent() {
   
   const [searchedId, setSearchedId] = useState(initialId);
   const [isSearching, setIsSearching] = useState(false);
-  const [result, setResult] = useState<{ id: string, frontUrl: string, backUrl: string, date: string } | null>(null);
+  const [result, setResult] = useState<{ id: string, frontUrl: string, date: string } | null>(null);
   const [error, setError] = useState('');
 
   const performSearch = useCallback(async (id: string) => {
@@ -29,7 +29,6 @@ function CertificateSearchContent() {
          setResult({
            id: payload.data.id,
            frontUrl: payload.data.frontImgUrl,
-           backUrl: payload.data.backImgUrl,
            date: payload.data.createdAt
          });
       } else {
@@ -142,16 +141,9 @@ function CertificateSearchContent() {
              
              <div className="w-full flex flex-col gap-10">
                 <div className="flex flex-col items-center gap-4">
-                  <span className="text-xs font-black text-gray-300 uppercase tracking-[0.5em]">Primary Authentication Face</span>
+                  <span className="text-xs font-black text-gray-300 uppercase tracking-[0.5em]">Digital Certificate Copy</span>
                   <div className="w-full max-w-4xl bg-white p-4 rounded-[2rem] shadow-2xl border border-gray-100">
-                    <img src={result.frontUrl} alt="Front Certificate" className="w-full rounded-[1.5rem] object-contain" />
-                  </div>
-                </div>
-                
-                <div className="flex flex-col items-center gap-4 border-t border-dashed border-gray-200 pt-16">
-                  <span className="text-xs font-black text-gray-300 uppercase tracking-[0.5em]">Secondary Authentication Face</span>
-                  <div className="w-full max-w-4xl bg-white p-4 rounded-[2rem] shadow-2xl border border-gray-100">
-                    <img src={result.backUrl} alt="Back Certificate" className="w-full rounded-[1.5rem] object-contain" />
+                    <img src={result.frontUrl} alt="Certificate Digital Copy" className="w-full rounded-[1.5rem] object-contain" />
                   </div>
                 </div>
              </div>
