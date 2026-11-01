@@ -1,40 +1,64 @@
 import { NextResponse } from 'next/server';
-import { SignJWT } from 'jose';
+import { signAdminToken, checkLoginRateLimit, recordFailedLogin, resetLoginAttempts } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
-    const { username, password } = await request.json();
+    // Extract IP address for rate limiting
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const realIp = request.headers.get('x-real-ip');
+    const clientIp = (forwardedFor ? forwardedFor.split(',')[0].trim() : realIp) || '127.0.0.1';
 
+    // Check rate limit
+    const rateLimit = checkLoginRateLimit(clientIp);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: `Too many login attempts. Please try again in ${rateLimit.remainingSeconds || 900} seconds.` 
+        }, 
+        { status: 429 }
+      );
+    }
+
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body.username !== 'string' || typeof body.password !== 'string') {
+      return NextResponse.json({ success: false, message: 'Invalid payload' }, { status: 400 });
+    }
+
+    const { username, password } = body;
     const envUser = process.env.ADMIN_USER;
     const envPass = process.env.ADMIN_PASS;
 
-    if (username?.trim() === envUser && password?.trim() === envPass) {
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback_secret');
-      
-      const token = await new SignJWT({ user: username, role: 'admin' })
-        .setProtectedHeader({ alg: 'HS256' })
-        .setIssuedAt()
-        .setExpirationTime('8h')
-        .sign(secret);
+    if (!envUser || !envPass) {
+      console.error('ADMIN_USER or ADMIN_PASS environment variable is not defined.');
+      return NextResponse.json({ success: false, message: 'Server configuration error' }, { status: 500 });
+    }
 
+    // Verify credentials
+    if (username.trim() === envUser.trim() && password === envPass) {
+      resetLoginAttempts(clientIp);
+
+      const token = await signAdminToken(username);
       const response = NextResponse.json({ success: true }, { status: 200 });
-      
-      // Set HttpOnly cookie
+
+      // Set secure HttpOnly cookie with lax SameSite for reliable redirects
       response.cookies.set({
         name: 'admin_token',
         value: token,
         httpOnly: true,
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 60 * 60 * 8 // 8 hours
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 8, // 8 hours
       });
 
       return response;
     }
 
-    return NextResponse.json({ success: false, message: 'Invalid credentials' }, { status: 401 });
+    recordFailedLogin(clientIp);
+    return NextResponse.json({ success: false, message: 'Invalid username or password' }, { status: 401 });
   } catch (error) {
-    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    console.error('Login error:', error);
+    return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });
   }
 }
